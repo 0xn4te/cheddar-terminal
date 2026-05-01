@@ -104,11 +104,12 @@ type MatchResult =
 
 const fmtUsd = (n: number | null | undefined): string => {
   if (n == null || n === 0 || isNaN(n)) return '—';
+  const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
-  if (abs >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (abs >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (abs >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + n.toFixed(0);
+  if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
+  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(1) + 'K';
+  return sign + '$' + abs.toFixed(0);
 };
 
 const fmtPs = (n: number | null | undefined): string => {
@@ -1686,8 +1687,13 @@ export default function CryptoValuation() {
                       style={{
                         padding: '10px 10px 10px 0',
                         textAlign: 'right',
-                        color: TOKENS.textMuted,
+                        color: p.rev24h < 0 ? TOKENS.red : TOKENS.textMuted,
                       }}
+                      title={
+                        p.rev24h < 0
+                          ? 'DefiLlama-reported revenue. Negative values reflect refunds, buyback expenses, or corrections in the underlying methodology.'
+                          : undefined
+                      }
                     >
                       {fmtUsd(p.rev24h)}
                     </td>
