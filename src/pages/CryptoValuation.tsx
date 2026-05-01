@@ -1618,12 +1618,8 @@ export default function CryptoValuation() {
                       {String(i + 1).padStart(2, '0')}
                     </td>
                     <td style={{ padding: '10px 10px 10px 0' }}>
-                      <a
-                        href={`https://defillama.com/protocol/${p.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <div
                         className="cpvf-link"
-                        onClick={(e) => e.stopPropagation()}
                         style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                       >
                         {p.logo && (
@@ -1651,7 +1647,7 @@ export default function CryptoValuation() {
                             ⊕{p.subCount}
                           </span>
                         )}
-                      </a>
+                      </div>
                     </td>
                     <td
                       style={{
