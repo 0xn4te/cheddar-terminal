@@ -84,12 +84,13 @@ type Period = '7d' | '30d';
 type SortDir = 'asc' | 'desc';
 type SortKey =
   | 'name' | 'category' | 'mcap' | 'fdv' | 'tvl'
-  | 'rev30d' | 'rev7d' | 'annRev' | 'ps' | 'revTvl'
+  | 'rev24h' | 'rev30d' | 'rev7d' | 'annRev' | 'ps' | 'revTvl'
   | 'change' | 'change30';
 
 // EnrichedProtocol = ResolvedProtocol + computed fields. Equivalent to the
 // shared `ProtocolRow` type so the modal can consume it directly.
 interface EnrichedProtocol extends ResolvedProtocol, ProtocolRow {
+  rev24h: number;
   rev7d: number;
   rev30d: number;
 }
@@ -574,6 +575,7 @@ function getSortValue(p: EnrichedProtocol, key: SortKey): number | string | null
     case 'mcap': return p.mcap;
     case 'fdv': return p.fdv;
     case 'tvl': return p.tvl;
+    case 'rev24h': return p.rev24h;
     case 'rev30d': return p.rev30d;
     case 'rev7d': return p.rev7d;
     case 'annRev': return p.annRev;
@@ -791,6 +793,7 @@ export default function CryptoValuation() {
   const enrichedAll: EnrichedProtocol[] = useMemo(() => {
     if (!raw || !raw.protocols) return [];
     return raw.protocols.map<EnrichedProtocol>((p) => {
+      const rev24h = p.total24h || 0;
       const rev7d = p.total7d || 0;
       const rev30d = p.total30d || 0;
       const annRev = period === '30d' ? (rev30d * 365) / 30 : (rev7d * 365) / 7;
@@ -803,6 +806,7 @@ export default function CryptoValuation() {
       const revTvl = tvl > 0 && annRev > 0 ? annRev / tvl : null;
       return {
         ...p,
+        rev24h,
         rev7d,
         rev30d,
         periodRev,
@@ -1531,10 +1535,10 @@ export default function CryptoValuation() {
                   </th>
                   <th
                     className="cpvf-th"
-                    onClick={() => toggleSort('rev30d')}
+                    onClick={() => toggleSort('rev24h')}
                     style={{ textAlign: 'right', padding: '10px 10px 10px 0' }}
                   >
-                    Rev 30d{sortArrow('rev30d')}
+                    24h Rev{sortArrow('rev24h')}
                   </th>
                   <th
                     className="cpvf-th"
@@ -1542,6 +1546,13 @@ export default function CryptoValuation() {
                     style={{ textAlign: 'right', padding: '10px 10px 10px 0' }}
                   >
                     Rev 7d{sortArrow('rev7d')}
+                  </th>
+                  <th
+                    className="cpvf-th"
+                    onClick={() => toggleSort('rev30d')}
+                    style={{ textAlign: 'right', padding: '10px 10px 10px 0' }}
+                  >
+                    Rev 30d{sortArrow('rev30d')}
                   </th>
                   <th
                     className="cpvf-th"
@@ -1678,7 +1689,7 @@ export default function CryptoValuation() {
                         color: TOKENS.textMuted,
                       }}
                     >
-                      {fmtUsd(p.rev30d)}
+                      {fmtUsd(p.rev24h)}
                     </td>
                     <td
                       style={{
@@ -1688,6 +1699,15 @@ export default function CryptoValuation() {
                       }}
                     >
                       {fmtUsd(p.rev7d)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '10px 10px 10px 0',
+                        textAlign: 'right',
+                        color: TOKENS.textMuted,
+                      }}
+                    >
+                      {fmtUsd(p.rev30d)}
                     </td>
                     <td
                       style={{
