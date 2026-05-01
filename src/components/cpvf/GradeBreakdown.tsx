@@ -169,7 +169,7 @@ export function GradeBreakdown({ entry }: GradeBreakdownProps) {
         </span>
         <span style={{ color: TOKENS.textMuted, fontSize: 13 }}>/ 10 grade</span>
 
-        {entry && (
+        {isGraded && entry && (
           <span
             style={{
               marginLeft: 'auto',
@@ -244,6 +244,22 @@ export function GradeBreakdown({ entry }: GradeBreakdownProps) {
           }}
         >
           Author a grade for this protocol in <code>src/data/cpvf-grades.json</code>.
+        </div>
+      )}
+
+      {!isGraded && (
+        <div
+          style={{
+            color: TOKENS.textMuted,
+            fontSize: 11,
+            lineHeight: 1.6,
+            maxWidth: 640,
+            marginTop: 12,
+          }}
+        >
+          Set scores for Mechanism, Inflation, Multiple, and PMF in the JSON file. Once
+          authored, the full grade breakdown — final score, dimension bars, and rationale —
+          will render here using the formula below.
         </div>
       )}
 

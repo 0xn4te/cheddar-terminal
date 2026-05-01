@@ -33,7 +33,7 @@ const MODAL_CSS = `
     background: ${TOKENS.surface};
     border: 1px solid ${TOKENS.border};
     width: 100%;
-    max-width: 1080px;
+    max-width: 960px;
     max-height: calc(100vh - 96px);
     overflow-y: auto;
     color: ${TOKENS.text};
