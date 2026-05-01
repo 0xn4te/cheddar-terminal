@@ -7,6 +7,7 @@ import { PriceChart } from './PriceChart';
 import { KeyMetricsPanel } from './KeyMetricsPanel';
 import { SubProductsList } from './SubProductsList';
 import { ExternalLinks } from './ExternalLinks';
+import { SocialLinks } from './SocialLinks';
 import { GradeBreakdown } from './GradeBreakdown';
 
 const GRADES: GradeEntry[] = gradesData as GradeEntry[];
@@ -188,6 +189,7 @@ export function ProtocolModal({ protocol, onClose }: ProtocolModalProps) {
           <div>
             <KeyMetricsPanel protocol={protocol} />
             <ExternalLinks slug={protocol.slug} geckoId={protocol.gecko_id} />
+            <SocialLinks protocolSlug={protocol.slug} coingeckoId={protocol.gecko_id} />
           </div>
         </div>
       </div>
