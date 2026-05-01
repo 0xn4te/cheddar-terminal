@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TOKENS, TERMINAL_GLOBAL_CSS, TopBar, BottomBar } from './_TerminalShell';
+import { ProtocolModal } from '../components/cpvf/ProtocolModal';
+import type { ProtocolRow, SubEntry } from '../components/cpvf/types';
 
 // ─── types ────────────────────────────────────────────────────────────────
 
@@ -23,8 +25,10 @@ interface DefiLlamaFeeEntry {
   category?: string;
   chains?: string[];
   logo?: string;
+  total24h?: number | string;
   total7d?: number | string;
   total30d?: number | string;
+  total1y?: number | string;
   change_7d?: number | string;
   change_30dover30d?: number | string;
 }
@@ -43,12 +47,15 @@ interface ResolvedProtocol {
   mcap: number;
   tvl: number;
   gecko_id: string | null;
+  total24h: number;
   total7d: number;
   total30d: number;
+  total1y: number;
   change_7d: number | null;
   change_30d: number | null;
   subCount: number;
   subNames: string[];
+  subEntries: SubEntry[];
   aggregated: boolean;
   fdv: number;
   mcapSource: 'defillama' | 'coingecko' | 'user-override' | null;
@@ -80,15 +87,11 @@ type SortKey =
   | 'rev30d' | 'rev7d' | 'annRev' | 'ps' | 'revTvl'
   | 'change' | 'change30';
 
-interface EnrichedProtocol extends ResolvedProtocol {
+// EnrichedProtocol = ResolvedProtocol + computed fields. Equivalent to the
+// shared `ProtocolRow` type so the modal can consume it directly.
+interface EnrichedProtocol extends ResolvedProtocol, ProtocolRow {
   rev7d: number;
   rev30d: number;
-  periodRev: number;
-  annRev: number;
-  ps: number | null;
-  revTvl: number | null;
-  change: number | null;
-  change30: number | null;
 }
 
 type MatchResult =
@@ -312,8 +315,10 @@ async function loadScreenerData(
 
   interface FeeGroup {
     groupKey: string;
+    total24h: number;
     total7d: number;
     total30d: number;
+    total1y: number;
     changeWeightedSum: number;
     changeWeightTotal: number;
     change30dWeightedSum: number;
@@ -322,6 +327,7 @@ async function loadScreenerData(
     chains: Set<string>;
     logo: string | null;
     subNames: string[];
+    subEntries: SubEntry[];
     fallbackName: string | null;
     hasExplicitParent: boolean;
   }
@@ -343,8 +349,10 @@ async function loadScreenerData(
     if (!groups.has(groupKey)) {
       groups.set(groupKey, {
         groupKey,
+        total24h: 0,
         total7d: 0,
         total30d: 0,
+        total1y: 0,
         changeWeightedSum: 0,
         changeWeightTotal: 0,
         change30dWeightedSum: 0,
@@ -353,19 +361,24 @@ async function loadScreenerData(
         chains: new Set<string>(),
         logo: null,
         subNames: [],
+        subEntries: [],
         fallbackName: null,
         hasExplicitParent,
       });
     }
 
     const g = groups.get(groupKey)!;
+    const rev24h = Number(p.total24h) || 0;
     const rev30 = Number(p.total30d) || 0;
     const rev7 = Number(p.total7d) || 0;
+    const rev1y = Number(p.total1y) || 0;
     const change = Number(p.change_7d);
     const change30 = Number(p.change_30dover30d);
 
+    g.total24h += rev24h;
     g.total7d += rev7;
     g.total30d += rev30;
+    g.total1y += rev1y;
     if (!isNaN(change) && rev30 > 0) {
       g.changeWeightedSum += change * rev30;
       g.changeWeightTotal += rev30;
@@ -377,7 +390,9 @@ async function loadScreenerData(
     if (!g.category && p.category) g.category = p.category;
     if (!g.logo && p.logo) g.logo = p.logo;
     (p.chains || []).forEach((c) => g.chains.add(c));
-    g.subNames.push(p.displayName || p.name || '');
+    const subName = p.displayName || p.name || '';
+    g.subNames.push(subName);
+    g.subEntries.push({ name: subName, total7d: rev7, total30d: rev30 });
     if (!g.fallbackName) g.fallbackName = p.displayName || p.name || null;
   });
 
@@ -424,12 +439,15 @@ async function loadScreenerData(
       mcap,
       tvl,
       gecko_id,
+      total24h: g.total24h,
       total7d: g.total7d,
       total30d: g.total30d,
+      total1y: g.total1y,
       change_7d,
       change_30d,
       subCount: g.subNames.length,
       subNames: g.subNames,
+      subEntries: g.subEntries,
       aggregated: g.hasExplicitParent && g.subNames.length > 1,
       fdv: 0,
       mcapSource: mcap > 0 ? 'defillama' : null,
@@ -654,6 +672,7 @@ export default function CryptoValuation() {
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [limit, setLimit] = useState<number>(30);
   const [coverageOpen, setCoverageOpen] = useState<boolean>(false);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   // Session-only userOverrides (no localStorage per task constraints).
   const [userOverrides, setUserOverrides] = useState<Record<string, SlugOverride>>({});
@@ -766,33 +785,39 @@ export default function CryptoValuation() {
     setAddedSnippets((prev) => (prev.includes(line) ? prev : [...prev, line]));
   }, []);
 
-  const enriched: EnrichedProtocol[] = useMemo(() => {
+  // enrichedAll: every protocol after computing period-derived fields, no
+  // filters applied. Used for modal lookup so a click on a row still resolves
+  // even if the user later changes filters that would hide it.
+  const enrichedAll: EnrichedProtocol[] = useMemo(() => {
     if (!raw || !raw.protocols) return [];
-    return raw.protocols
-      .map<EnrichedProtocol>((p) => {
-        const rev7d = p.total7d || 0;
-        const rev30d = p.total30d || 0;
-        const annRev = period === '30d' ? (rev30d * 365) / 30 : (rev7d * 365) / 7;
-        const mcap = p.mcap || 0;
-        const fdv = p.fdv || 0;
-        const tvl = p.tvl || 0;
-        const valuationVal = valuation === 'fdv' ? fdv : mcap;
-        const periodRev = period === '30d' ? rev30d : rev7d;
-        const ps = valuationVal > 0 && annRev > 0 ? valuationVal / annRev : null;
-        const revTvl = tvl > 0 && annRev > 0 ? annRev / tvl : null;
-        return {
-          ...p,
-          rev7d,
-          rev30d,
-          periodRev,
-          annRev,
-          ps,
-          revTvl,
-          tvl,
-          change: p.change_7d,
-          change30: p.change_30d,
-        };
-      })
+    return raw.protocols.map<EnrichedProtocol>((p) => {
+      const rev7d = p.total7d || 0;
+      const rev30d = p.total30d || 0;
+      const annRev = period === '30d' ? (rev30d * 365) / 30 : (rev7d * 365) / 7;
+      const mcap = p.mcap || 0;
+      const fdv = p.fdv || 0;
+      const tvl = p.tvl || 0;
+      const valuationVal = valuation === 'fdv' ? fdv : mcap;
+      const periodRev = period === '30d' ? rev30d : rev7d;
+      const ps = valuationVal > 0 && annRev > 0 ? valuationVal / annRev : null;
+      const revTvl = tvl > 0 && annRev > 0 ? annRev / tvl : null;
+      return {
+        ...p,
+        rev7d,
+        rev30d,
+        periodRev,
+        annRev,
+        ps,
+        revTvl,
+        tvl,
+        change: p.change_7d,
+        change30: p.change_30d,
+      };
+    });
+  }, [raw, period, valuation]);
+
+  const enriched: EnrichedProtocol[] = useMemo(() => {
+    return enrichedAll
       .filter((p) => {
         const band = MCAP_BANDS.find((b) => b.key === mcapBand) || MCAP_BANDS[0];
         return p.mcap >= band.min && p.mcap < band.max && p.ps != null && p.ps > 0 && p.periodRev > 0;
@@ -800,7 +825,12 @@ export default function CryptoValuation() {
       .filter((p) => category === 'All' || p.category === category)
       .filter((p) => chain === 'All' || p.chains.includes(chain))
       .filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()));
-  }, [raw, period, category, chain, mcapBand, search, valuation]);
+  }, [enrichedAll, category, chain, mcapBand, search]);
+
+  const selectedRow = useMemo<EnrichedProtocol | null>(() => {
+    if (!selectedSlug) return null;
+    return enrichedAll.find((p) => p.slug === selectedSlug) ?? null;
+  }, [selectedSlug, enrichedAll]);
 
   const sorted = useMemo(() => {
     const arr = [...enriched];
@@ -1565,9 +1595,11 @@ export default function CryptoValuation() {
                   <tr
                     key={p.slug + i}
                     className="cpvf-row"
+                    onClick={() => setSelectedSlug(p.slug)}
                     style={{
                       borderBottom: `1px solid ${TOKENS.border}`,
                       color: TOKENS.text,
+                      cursor: 'pointer',
                     }}
                   >
                     <td style={{ padding: '10px 10px 10px 0', color: TOKENS.textDim }}>
@@ -1579,6 +1611,7 @@ export default function CryptoValuation() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="cpvf-link"
+                        onClick={(e) => e.stopPropagation()}
                         style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                       >
                         {p.logo && (
@@ -1721,6 +1754,7 @@ export default function CryptoValuation() {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           title={
                             p.dexscreener
                               ? `Open ${p.name} pair on DexScreener`
@@ -1804,15 +1838,44 @@ export default function CryptoValuation() {
             typically orderbook venues where TVL is just collateral), 10–50% neutral, &lt;10%
             dim. Tracks the same period toggle as P/S; protocols with no TVL show "—".
           </p>
-          <p style={{ margin: 0 }}>
+          <p style={{ margin: '0 0 8px' }}>
             <strong style={{ color: TOKENS.text }}>Joins:</strong> DefiLlama{' '}
             <code>/overview/fees</code> → <code>/protocols</code> (by parent slug, source of mcap
             + TVL) → CoinGecko <code>gecko_id</code> for FDV and as a mcap fallback when DefiLlama
             doesn't track the token (e.g. HYPE). A low multiple is not a buy signal — often
             reflects decaying revenue or heavy emissions.
           </p>
+          <p style={{ margin: 0 }}>
+            <strong style={{ color: TOKENS.text }}>Token Grade:</strong> Composite 0-10 score
+            across Mechanism (value accrual), Inflation (supply pressure), Multiple (valuation
+            cheapness), and PMF (product-market fit). Final grade applies caps for
+            low-mechanism and extreme overvaluation. Rubric adapted from{' '}
+            <a
+              href="https://x.com/0xkyle__"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: TOKENS.amber, textDecoration: 'underline' }}
+            >
+              @0xkyle__
+            </a>
+            ’s{' '}
+            <a
+              href="https://defillama-revenue.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: TOKENS.amber, textDecoration: 'underline' }}
+            >
+              Crypto Revenue Leaderboard
+            </a>
+            . Classifications manually curated; protocols without an authored grade show{' '}
+            <code>—</code>.
+          </p>
         </div>
       </main>
+
+      {selectedRow && (
+        <ProtocolModal protocol={selectedRow} onClose={() => setSelectedSlug(null)} />
+      )}
 
       <BottomBar />
     </div>

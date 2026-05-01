@@ -49,6 +49,8 @@ if (!hasCoinglassKey()) {
   );
 }
 
-serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`[cheddar-terminal] backend listening on http://localhost:${info.port}`);
+const hostname = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+serve({ fetch: app.fetch, port, hostname }, (info) => {
+  console.log(`[cheddar-terminal] backend listening on http://${info.address}:${info.port}`);
 });

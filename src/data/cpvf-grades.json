@@ -1,0 +1,35 @@
+[
+  {
+    "slug": "aave",
+    "type": "Token",
+    "tokenized": true,
+    "mechanism": null,
+    "inflation": null,
+    "multiple": null,
+    "pmf": null,
+    "note": "Pending analyst review",
+    "authoredAt": "2026-05-01"
+  },
+  {
+    "slug": "lido",
+    "type": "Token",
+    "tokenized": true,
+    "mechanism": null,
+    "inflation": null,
+    "multiple": null,
+    "pmf": null,
+    "note": "Pending analyst review",
+    "authoredAt": "2026-05-01"
+  },
+  {
+    "slug": "hyperliquid",
+    "type": "Token",
+    "tokenized": true,
+    "mechanism": null,
+    "inflation": null,
+    "multiple": null,
+    "pmf": null,
+    "note": "Pending analyst review",
+    "authoredAt": "2026-05-01"
+  }
+]
