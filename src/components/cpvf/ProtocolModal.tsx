@@ -68,6 +68,8 @@ const MODAL_CSS = `
     border-color: ${TOKENS.amber};
     color: ${TOKENS.amber};
   }
+
+  .cpvf-retry:hover { text-decoration: underline; }
 `;
 
 export function ProtocolModal({ protocol, onClose }: ProtocolModalProps) {

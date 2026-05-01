@@ -34,6 +34,9 @@ const fmtPct = (n: number | null): string => {
 
 export function PriceChart({ geckoId }: PriceChartProps) {
   const [state, setState] = useState<LoadState>({ phase: 'idle' });
+  // attemptCount drives manual retries — bumping it re-runs the fetch effect
+  // without unmounting the component (so the modal stays open).
+  const [attemptCount, setAttemptCount] = useState(0);
 
   useEffect(() => {
     if (!geckoId) {
@@ -67,7 +70,9 @@ export function PriceChart({ geckoId }: PriceChartProps) {
     return () => {
       cancelled = true;
     };
-  }, [geckoId]);
+  }, [geckoId, attemptCount]);
+
+  const handleRetry = () => setAttemptCount((n) => n + 1);
 
   const summary = useMemo(() => {
     if (state.phase !== 'ok' || state.points.length === 0) {
@@ -175,13 +180,37 @@ export function PriceChart({ geckoId }: PriceChartProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: TOKENS.textDim,
-              fontSize: 10,
-              letterSpacing: '0.14em',
+              gap: 10,
+              color: TOKENS.textMuted,
+              fontSize: 9,
+              letterSpacing: '0.1em',
               textTransform: 'uppercase',
             }}
           >
-            price unavailable
+            <span>price unavailable</span>
+            {geckoId && (
+              <>
+                <span style={{ color: TOKENS.textDim }}>·</span>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="cpvf-retry"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    color: TOKENS.amber,
+                    fontFamily: 'inherit',
+                    fontSize: 9,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  retry
+                </button>
+              </>
+            )}
           </div>
         )}
         {state.phase === 'ok' && chartData && <Line data={chartData} options={options} />}
