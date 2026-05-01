@@ -26,23 +26,26 @@ ChartJS.register(
   Legend,
 );
 
-// Design tokens — keep in sync with src/styles.css :root variables.
+// Bloomberg palette — keep these in sync with src/styles.css :root tokens.
+// Chart.js needs raw hex strings (no CSS vars), hence the duplication.
 export const COLORS = {
-  bg: '#0d0b07',
-  surface: '#14110b',
-  text: '#ede0c4',
-  textDim: '#8a8170',
-  divider: '#2a2520',
-  positive: '#6fa86b',
-  negative: '#c2553f',
-  accent: '#d4a35a',
-  axis: '#3a342b',
-  grid: 'rgba(138, 129, 112, 0.12)',
+  bg: '#0a0a0a',
+  surface: '#141414',
+  text: '#e8e8e8',
+  textDim: '#888',
+  divider: '#1f1f1f',
+  positive: '#3FB950',
+  negative: '#f04747',
+  accent: '#f5a623',
+  axis: '#666',
+  grid: 'rgba(255, 255, 255, 0.04)',
+  zero: '#444',
 } as const;
 
-ChartJS.defaults.font.family = '"JetBrains Mono", ui-monospace, monospace';
-ChartJS.defaults.font.size = 11;
-ChartJS.defaults.color = COLORS.textDim;
+ChartJS.defaults.font.family =
+  '"JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, ui-monospace, monospace';
+ChartJS.defaults.font.size = 10;
+ChartJS.defaults.color = COLORS.axis;
 ChartJS.defaults.borderColor = COLORS.divider;
 
 export function defaultChartOptions<T extends ChartType = 'line'>(): ChartOptions<T> {
@@ -64,13 +67,13 @@ export function defaultChartOptions<T extends ChartType = 'line'>(): ChartOption
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: COLORS.textDim, maxRotation: 0 },
-        border: { color: COLORS.axis },
+        ticks: { color: COLORS.axis, maxRotation: 0 },
+        border: { color: COLORS.divider },
       },
       y: {
         grid: { color: COLORS.grid },
-        ticks: { color: COLORS.textDim },
-        border: { color: COLORS.axis },
+        ticks: { color: COLORS.axis },
+        border: { color: COLORS.divider },
       },
     },
   } as ChartOptions<T>;

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import type { CQDataPoint, DashboardData } from '../lib/api.ts';
 import { dataOf, getDashboard } from '../lib/api.ts';
 import { getHistory, historyToData, type HistoryResponse } from '../lib/history.ts';
@@ -25,6 +26,7 @@ import { IndicatorsChart } from '../components/IndicatorsChart.tsx';
 import { RatioChart } from '../components/RatioChart.tsx';
 import { FundingRateChart } from '../components/FundingRateChart.tsx';
 import { WindowSelector, windowToDays, type ViewWindow } from '../components/WindowSelector.tsx';
+import { TopBar, BottomBar, TERMINAL_GLOBAL_CSS } from './_TerminalShell';
 
 type State =
   | { phase: 'loading' }
@@ -50,6 +52,40 @@ const HISTORY_REQUESTS = [
 ] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+interface ShellProps {
+  children: ReactNode;
+  viewWindow: ViewWindow;
+  onWindowChange: (next: ViewWindow) => void;
+  historyLoading: boolean;
+  generatedAt: string | null;
+}
+
+function Shell({ children, viewWindow, onWindowChange, historyLoading, generatedAt }: ShellProps) {
+  return (
+    <div className="cheddar-page">
+      <style>{TERMINAL_GLOBAL_CSS}</style>
+      <TopBar />
+      <div className="module-bar">
+        <div className="module-bar__left">
+          <span className="module-bar__code">MODULE ALMR</span>
+          <span className="module-bar__title">ALTCOIN LIQUIDITY MONITOR</span>
+        </div>
+        <Link to="/" className="module-bar__back">← BACK TO TERMINAL</Link>
+      </div>
+      <div className="toolbar">
+        <span>
+          {generatedAt
+            ? `GENERATED ${fmtDate(generatedAt, true).toUpperCase()} · CRYPTOQUANT + COINGLASS`
+            : 'AWAITING UPSTREAM DATA…'}
+        </span>
+        <WindowSelector value={viewWindow} onChange={onWindowChange} loading={historyLoading} />
+      </div>
+      {children}
+      <BottomBar />
+    </div>
+  );
+}
 
 export default function AltcoinMonitor() {
   const [state, setState] = useState<State>({ phase: 'loading' });
@@ -114,37 +150,40 @@ export default function AltcoinMonitor() {
     };
   }, [viewWindow]);
 
-  if (state.phase === 'loading') {
-    return (
-      <main className="page page--center">
-        <div className="loading">Loading on-chain flows…</div>
-      </main>
-    );
-  }
-
-  if (state.phase === 'error') {
-    return (
-      <main className="page page--center">
-        <div className="error">
-          <div className="error__title">Dashboard unavailable</div>
-          <div className="error__detail">{state.message}</div>
-          <div className="error__hint">
-            Check that the backend is running on :8787 and that{' '}
-            <code>CRYPTOQUANT_API_KEY</code> is set in <code>.env</code>.
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const generatedAt = state.phase === 'ready' ? state.data.generatedAt : null;
 
   return (
-    <DashboardView
-      data={state.data}
+    <Shell
       viewWindow={viewWindow}
       onWindowChange={setViewWindow}
-      historyMap={historyMap}
       historyLoading={historyLoading}
-    />
+      generatedAt={generatedAt}
+    >
+      {state.phase === 'loading' && (
+        <main className="page page--center">
+          <div className="loading">Loading on-chain flows…</div>
+        </main>
+      )}
+      {state.phase === 'error' && (
+        <main className="page page--center">
+          <div className="error">
+            <div className="error__title">Dashboard unavailable</div>
+            <div className="error__detail">{state.message}</div>
+            <div className="error__hint">
+              Check that the backend is running on :8787 and that{' '}
+              <code>CRYPTOQUANT_API_KEY</code> is set in <code>.env</code>.
+            </div>
+          </div>
+        </main>
+      )}
+      {state.phase === 'ready' && (
+        <DashboardView
+          data={state.data}
+          viewWindow={viewWindow}
+          historyMap={historyMap}
+        />
+      )}
+    </Shell>
   );
 }
 
@@ -156,12 +195,10 @@ interface ChartSlot {
 interface DashboardViewProps {
   data: DashboardData;
   viewWindow: ViewWindow;
-  onWindowChange: (next: ViewWindow) => void;
   historyMap: Map<string, HistoryResponse> | null;
-  historyLoading: boolean;
 }
 
-function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLoading }: DashboardViewProps) {
+function DashboardView({ data, viewWindow, historyMap }: DashboardViewProps) {
   // Tile data always comes from the dashboard endpoint, regardless of window.
   const btcNetflow = dataOf(data.flows.btcNetflow);
   const ethNetflow = dataOf(data.flows.ethNetflow);
@@ -263,20 +300,6 @@ function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLo
 
   return (
     <main className="page">
-      <header className="masthead">
-        <div className="masthead__rule" />
-        <h1 className="masthead__title">
-          Alt Flow Monitor — <em>a daily reading of on-chain liquidity</em>
-        </h1>
-        <div className="masthead__row">
-          <div className="masthead__sub">
-            {fmtDate(data.generatedAt, true)} · CryptoQuant + Coinglass feeds · local instance
-          </div>
-          <WindowSelector value={viewWindow} onChange={onWindowChange} loading={historyLoading} />
-        </div>
-        <div className="masthead__rule" />
-      </header>
-
       <section className="hero">
         <HeroScore result={indexResult} />
         <HeroChart btcNetflow={btcNetflowSlot.data} />
@@ -371,7 +394,7 @@ function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLo
       </section>
 
       <section className="section-heading">
-        <h2><em>Stablecoin flows</em></h2>
+        <h2>Stablecoin flows</h2>
         <p>USD moving onto and off exchanges via USDT and USDC. Outflows = stables parked off-exchange (often a sign holders aren't deploying yet).</p>
       </section>
 
@@ -393,7 +416,7 @@ function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLo
       </section>
 
       <section className="section-heading">
-        <h2><em>Whales &amp; miners</em></h2>
+        <h2>Whales &amp; miners</h2>
         <p>Cohort-level signals. Whale-ratio lift typically precedes volatility; sustained miner outflows signal distribution.</p>
       </section>
 
@@ -416,7 +439,7 @@ function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLo
       </section>
 
       <section className="section-heading">
-        <h2><em>Derivatives sentiment</em></h2>
+        <h2>Derivatives sentiment</h2>
         <p>OI-weighted aggregated funding rates and positioning. Positive funding = crowded long; negative = crowded short. Top-trader long/short ratios above 1 lean bullish.</p>
       </section>
 
@@ -477,9 +500,7 @@ function DashboardView({ data, viewWindow, onWindowChange, historyMap, historyLo
       </section>
 
       <section className="methodology">
-        <h2 className="methodology__title">
-          <em>How the Alt Flow Index is built</em>
-        </h2>
+        <h2 className="methodology__title">How the Alt Flow Index is built</h2>
         <p>
           A weighted composite, bounded [-100, +100]. Inputs are normalized
           through a tanh so extremes saturate gracefully. Components renormalize

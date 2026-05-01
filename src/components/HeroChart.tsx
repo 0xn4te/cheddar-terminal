@@ -45,7 +45,7 @@ export function HeroChart({ btcNetflow }: HeroChartProps) {
         label: 'BTC netflow (7d sum, USD)',
         data: series.values,
         borderColor: COLORS.accent,
-        backgroundColor: 'rgba(212, 163, 90, 0.12)',
+        backgroundColor: 'rgba(245, 166, 35, 0.12)',
         fill: true,
         tension: 0.25,
         pointRadius: 0,

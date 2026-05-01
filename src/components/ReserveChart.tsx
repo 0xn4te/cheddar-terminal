@@ -35,7 +35,7 @@ export function ReserveChart({
         label: title,
         data: series.values,
         borderColor: COLORS.accent,
-        backgroundColor: 'rgba(212, 163, 90, 0.10)',
+        backgroundColor: 'rgba(245, 166, 35, 0.10)',
         fill: true,
         tension: 0.25,
         pointRadius: 0,

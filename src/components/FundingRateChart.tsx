@@ -39,8 +39,8 @@ export function FundingRateChart({ data, title, days = 90, archiveNote }: Fundin
         tension: 0.2,
         fill: {
           target: 'origin',
-          above: 'rgba(194, 85, 63, 0.18)',
-          below: 'rgba(111, 168, 107, 0.18)',
+          above: 'rgba(240, 71, 71, 0.18)',
+          below: 'rgba(63, 185, 80, 0.18)',
         },
       },
     ],

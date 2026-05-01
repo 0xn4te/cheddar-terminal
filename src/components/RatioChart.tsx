@@ -34,7 +34,7 @@ export function RatioChart({
       label: title,
       data: series.values,
       borderColor: COLORS.accent,
-      backgroundColor: 'rgba(212, 163, 90, 0.08)',
+      backgroundColor: 'rgba(245, 166, 35, 0.08)',
       fill: true,
       tension: 0.25,
       pointRadius: 0,
