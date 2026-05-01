@@ -149,7 +149,7 @@ export function PriceChart({ geckoId }: PriceChartProps) {
         </span>
       </div>
 
-      <div style={{ height: 200, position: 'relative' }}>
+      <div style={{ height: 360, position: 'relative' }}>
         {state.phase === 'loading' && (
           <div
             style={{
