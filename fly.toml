@@ -1,0 +1,25 @@
+app = "cheddar-terminal"
+primary_region = "jnb"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8787"
+  DB_PATH = "/app/data/liquidity.db"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[[mounts]]
+  source = "cheddar_data"
+  destination = "/app/data"
