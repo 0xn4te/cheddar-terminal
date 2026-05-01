@@ -176,53 +176,19 @@ export function ProtocolModal({ protocol, onClose }: ProtocolModalProps) {
           </button>
         </div>
 
-        {/* Body — two columns at desktop */}
+        {/* Body — two columns at desktop. Grade breakdown lives in the left
+            column under the chart so it fills the dead space rather than
+            creating an asymmetric full-width row below. */}
         <div className="cpvf-modal-body">
           <div>
             <PriceChart geckoId={protocol.gecko_id} />
             <SubProductsList protocol={protocol} />
+            <GradeBreakdown entry={gradeEntry} />
           </div>
           <div>
             <KeyMetricsPanel protocol={protocol} />
             <ExternalLinks slug={protocol.slug} geckoId={protocol.gecko_id} />
           </div>
-        </div>
-
-        {/* Full-width grade breakdown */}
-        <div style={{ padding: '0 24px 24px' }}>
-          <GradeBreakdown entry={gradeEntry} />
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            padding: '12px 24px 16px',
-            borderTop: `1px solid ${TOKENS.border}`,
-            color: TOKENS.textDim,
-            fontSize: 9,
-            letterSpacing: '0.08em',
-            textAlign: 'right',
-          }}
-        >
-          Rubric adapted from{' '}
-          <a
-            href="https://x.com/0xkyle__"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: TOKENS.textMuted, textDecoration: 'underline' }}
-          >
-            @0xkyle__
-          </a>
-          ’s{' '}
-          <a
-            href="https://defillama-revenue.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: TOKENS.textMuted, textDecoration: 'underline' }}
-          >
-            Crypto Revenue Leaderboard
-          </a>
-          .
         </div>
       </div>
     </div>
