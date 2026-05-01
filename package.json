@@ -1,5 +1,5 @@
 {
-  "name": "liquidity-monitor",
+  "name": "cheddar-terminal",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -20,7 +20,8 @@
     "hono": "^4.6.14",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
