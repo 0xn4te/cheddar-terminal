@@ -1871,26 +1871,8 @@ export default function CryptoValuation() {
             <strong style={{ color: TOKENS.text }}>Token Grade:</strong> Composite 0-10 score
             across Mechanism (value accrual), Inflation (supply pressure), Multiple (valuation
             cheapness), and PMF (product-market fit). Final grade applies caps for
-            low-mechanism and extreme overvaluation. Rubric adapted from{' '}
-            <a
-              href="https://x.com/0xkyle__"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: TOKENS.amber, textDecoration: 'underline' }}
-            >
-              @0xkyle__
-            </a>
-            ’s{' '}
-            <a
-              href="https://defillama-revenue.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: TOKENS.amber, textDecoration: 'underline' }}
-            >
-              Crypto Revenue Leaderboard
-            </a>
-            . Classifications manually curated; protocols without an authored grade show{' '}
-            <code>—</code>.
+            low-mechanism and extreme overvaluation. Classifications manually curated;
+            protocols without an authored grade show <code>—</code>.
           </p>
         </div>
       </main>

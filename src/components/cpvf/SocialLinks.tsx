@@ -142,9 +142,9 @@ function mergeLinks(
   cg: CoinGeckoLinks | null,
 ): MergedLinks {
   const twitter: string | null = dl?.twitter
-    ? `https://twitter.com/${dl.twitter.replace(/^@/, '')}`
+    ? `https://x.com/${dl.twitter.replace(/^@/, '')}`
     : cg?.twitter_screen_name
-      ? `https://twitter.com/${cg.twitter_screen_name}`
+      ? `https://x.com/${cg.twitter_screen_name}`
       : null;
 
   const website: string | null = dl?.url || cg?.homepage?.[0] || null;
