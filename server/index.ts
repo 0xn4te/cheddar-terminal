@@ -7,8 +7,11 @@ import { dashboardRoute } from './routes/dashboard.ts';
 import { healthRoute } from './routes/health.ts';
 import { historyRoute } from './routes/history.ts';
 import { ngxRoute } from './routes/ngx.ts';
+import { homeRoute } from './routes/home.ts';
+import { activityRoute } from './routes/activity.ts';
 import { hasApiKey } from './cryptoquant.ts';
 import { hasCoinglassKey } from './coinglass.ts';
+import { logActivity } from './lib/activity.ts';
 
 const app = new Hono();
 
@@ -18,6 +21,8 @@ app.route('/api/health', healthRoute);
 app.route('/api/dashboard', dashboardRoute);
 app.route('/api/history', historyRoute);
 app.route('/api/ngx', ngxRoute);
+app.route('/api/home', homeRoute);
+app.route('/api/activity', activityRoute);
 
 if (process.env.NODE_ENV === 'production') {
   // Serve static built assets first. serveStatic calls next() on miss so
@@ -55,4 +60,10 @@ const hostname = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
 
 serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`[cheddar-terminal] backend listening on http://${info.address}:${info.port}`);
+  logActivity({
+    module: 'SYSTEM',
+    action: 'FETCH',
+    detail: `boot · listening on :${info.port}`,
+    status: 'OK',
+  });
 });

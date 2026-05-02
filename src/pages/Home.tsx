@@ -1,140 +1,78 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TOKENS, TERMINAL_GLOBAL_CSS, TopBar, BottomBar } from './_TerminalShell';
 
-// ---- Static content ----
+// ─── snapshot types ─────────────────────────────────────────────────────
+// Mirror the server's HomeSnapshot shape — kept in sync manually rather
+// than re-imported, so the frontend doesn't pull in server-only deps.
 
-interface Ticker { sym: string; px: number; ch: number; }
-const TICKERS: Ticker[] = [
-  { sym: 'BTC',       px: 94287.15, ch:  1.24 },
-  { sym: 'ETH',       px:  3421.82, ch:  0.92 },
-  { sym: 'SOL',       px:   187.42, ch: -0.87 },
-  { sym: 'TAO',       px:   412.18, ch:  2.41 },
-  { sym: 'NGX ASI',   px:203770.45, ch:  0.45 },
-  { sym: 'NGX BNK10', px:  1284.17, ch:  0.71 },
-  { sym: 'USD/NGN',   px:  1547.20, ch:  0.18 },
-  { sym: 'BRENT',     px:    78.42, ch: -0.34 },
-  { sym: 'XAU',       px:  2674.10, ch:  0.62 },
-  { sym: 'DXY',       px:   104.27, ch: -0.11 },
-  { sym: 'ETHFI',     px:     1.42, ch:  4.21 },
-  { sym: 'DANGCEM',   px:   482.50, ch:  1.05 },
-];
+interface TickerQuote { price: number; change24h: number | null }
+type Band = 'RISK-ON' | 'NEUTRAL' | 'RISK-OFF';
 
-interface Metric { label: string; val: string; color: string; }
-
-interface Card {
-  section: string;
-  code: string;
-  state: 'live' | 'stub';
-  href: string;
-  comingSoon?: boolean;
-  title: string;
-  blurb: string;
-  sources: string;
-  headline: string;
-  headlineColor: string;
-  headlineLabel: string;
-  metrics: Metric[];
+interface AltFlowCard {
+  indexValue: number;
+  band: Band;
+  dotColor: string;
+  lastUpdatedMs: number;
+}
+interface CpvfCard {
+  medianPS: number;
+  topLeader: { name: string; rev24h: number };
+  lastUpdatedMs: number;
+}
+interface NgxvCard {
+  medianPE: number;
+  cheapest: { ticker: string; pbDelta: number };
+  lastUpdatedMs: number;
 }
 
-const CARDS: Card[] = [
-  {
-    section: 'LIQUIDITY',
-    code: 'ALMR',
-    state: 'live',
-    href: '/altcoin-monitor',
-    title: 'ALTCOIN LIQUIDITY MONITOR',
-    blurb: 'Composite Alt Flow Index across stablecoin supply, BTC dominance, exchange netflows and top-alt momentum.',
-    sources: 'CRYPTOQUANT · DEFILLAMA · COINPAPRIKA',
-    headline: '+42.7',
-    headlineColor: TOKENS.green,
-    headlineLabel: 'FLOW INDEX',
-    metrics: [
-      { label: 'ALT FLOW',  val: '+42.7',     color: TOKENS.green },
-      { label: 'USDT 7D',   val: '+2.1%',     color: TOKENS.green },
-      { label: 'BTC.D',     val: '54.8%',     color: TOKENS.red },
-      { label: 'SIGNAL',    val: 'ROTATING',  color: TOKENS.amber },
-    ],
-  },
-  {
-    section: 'EQUITIES',
-    code: 'NGXV',
-    state: 'live',
-    href: '/ngx-valuation',
-    title: 'NGX VALUATION',
-    blurb: 'Nigerian equities · cheap vs peers. P/E, P/B and dividend yield across NGX listings with sector-relative P/B Δ — the only multiple that matters for financials.',
-    sources: 'AFX.KWAYISI · NGX GROUP · COMPANY FILINGS',
-    headline: '5',
-    headlineColor: TOKENS.text,
-    headlineLabel: 'NAMES TRACKED',
-    metrics: [
-      { label: 'ACCESSCORP', val: '2.6×', color: TOKENS.green },
-      { label: 'UBA',        val: '3.1×', color: TOKENS.green },
-      { label: 'ZENITH',     val: '5.1×', color: TOKENS.green },
-      { label: 'GTCO',       val: '5.1×', color: TOKENS.green },
-    ],
-  },
-  {
-    section: 'CRYPTO',
-    code: 'CPVF',
-    state: 'stub',
-    href: '/crypto-valuation',
-    title: 'PROTOCOL VALUATION',
-    blurb: 'Revenue multiples, P/F and P/S benchmarks across DeFi sectors. Sector fair-value bands and live multiples.',
-    sources: 'DEFILLAMA · TOKENTERMINAL · ON-CHAIN',
-    headline: '14.3×',
-    headlineColor: TOKENS.text,
-    headlineLabel: 'P/S MEDIAN',
-    metrics: [
-      { label: 'P/S MED',  val: '14.3×',  color: TOKENS.text },
-      { label: 'P/F MED',  val: '22.7×',  color: TOKENS.text },
-      { label: 'FAIR',     val: '10–30×', color: TOKENS.amber },
-      { label: 'SECTORS',  val: '7',      color: TOKENS.text },
-    ],
-  },
-];
-
-interface ActivityRow { time: string; code: string; msg: string; }
-const ACTIVITY: ActivityRow[] = [
-  { time: '14:31:42', code: 'ALMR', msg: 'USDT supply +$412M / 24h — dry powder forming' },
-  { time: '14:28:15', code: 'NGXV', msg: 'ACCESSCORP P/B drift: 0.42× → 0.43× on volume' },
-  { time: '14:24:03', code: 'CPVF', msg: 'DEX sector P/F median compressed to 19.4×' },
-  { time: '14:19:28', code: 'ALMR', msg: 'BTC.D crossed 55% → flow regime: NEUTRAL→ROTATING' },
-  { time: '14:11:07', code: 'NGXV', msg: 'GTCO Q1 EPS estimate revised +4.2%' },
-  { time: '14:02:51', code: 'CPVF', msg: 'Restaking sector added — 4 names, P/F 38.1× med' },
-];
-
-// Deterministic sin-based pseudo-random sparkline. Same input → same output.
-function sparklinePoints(seed: number, count = 24): string {
-  const values: number[] = [];
-  for (let i = 0; i < count; i++) {
-    values.push(
-      Math.sin(seed * 0.71 + i * 0.42) +
-      Math.sin(seed * 1.31 + i * 0.21) * 0.5,
-    );
-  }
-  let min = Infinity, max = -Infinity;
-  for (const v of values) {
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-  const range = max - min || 1;
-  const W = 100, H = 24;
-  return values
-    .map((v, i) => {
-      const x = (i / (count - 1)) * W;
-      const y = H - ((v - min) / range) * (H - 2) - 1;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+interface HomeSnapshot {
+  fetchedAt: number;
+  ticker: Partial<Record<'BTC' | 'ETH' | 'SOL' | 'XAU' | 'SPX' | 'USDNGN' | 'ASI', TickerQuote>>;
+  cards: { altflow?: AltFlowCard; cpvf?: CpvfCard; ngxv?: NgxvCard };
 }
 
-// ---- Sub-components ----
+interface ActivityEvent {
+  ts: number;
+  module: 'TICKER' | 'ALTFLOW' | 'CPVF' | 'NGXV' | 'HOME' | 'SYSTEM';
+  action: 'FETCH' | 'CACHE_HIT' | 'CACHE_REFRESH' | 'PAGE_HIT' | 'ERROR';
+  detail: string;
+  status: 'OK' | 'FAIL' | 'STALE';
+}
 
-function TickerStrip() {
-  // Items duplicated for seamless marquee loop. Translates -50% over 90s,
-  // which lands the second copy exactly where the first started.
-  const items = [...TICKERS, ...TICKERS];
+// ─── ticker strip ───────────────────────────────────────────────────────
+
+const TICKER_DISPLAY: { key: keyof HomeSnapshot['ticker']; label: string; decimals?: number; unit?: string }[] = [
+  { key: 'BTC',    label: 'BTC',     decimals: 0,  unit: '$' },
+  { key: 'ETH',    label: 'ETH',     decimals: 0,  unit: '$' },
+  { key: 'SOL',    label: 'SOL',     decimals: 2,  unit: '$' },
+  { key: 'XAU',    label: 'GOLD',    decimals: 1,  unit: '$' },
+  { key: 'SPX',    label: 'SPX',     decimals: 1 },
+  { key: 'USDNGN', label: 'USD/NGN', decimals: 2,  unit: '₦' },
+  { key: 'ASI',    label: 'NGX ASI', decimals: 2 },
+];
+
+function fmtPrice(n: number, decimals: number): string {
+  return n.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function TickerStrip({ ticker }: { ticker: HomeSnapshot['ticker'] | null }) {
+  // Build a flat list of populated symbols; if nothing yet, render placeholder.
+  const items = TICKER_DISPLAY.flatMap((t) => {
+    const q = ticker?.[t.key];
+    if (!q) return [{ label: t.label, price: '—', change: null as number | null, unit: t.unit }];
+    return [{
+      label: t.label,
+      price: (t.unit || '') + fmtPrice(q.price, t.decimals ?? 2),
+      change: q.change24h,
+      unit: t.unit,
+    }];
+  });
+  // Duplicate for marquee loop.
+  const looped = [...items, ...items];
   return (
     <div
       style={{
@@ -155,18 +93,20 @@ function TickerStrip() {
           willChange: 'transform',
         }}
       >
-        {items.map((t, i) => (
+        {looped.map((t, i) => (
           <span key={i} style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ color: TOKENS.textMuted, marginRight: 6 }}>{t.sym}</span>
-            <span style={{ color: TOKENS.text }}>{t.px.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-            <span
-              style={{
-                color: t.ch >= 0 ? TOKENS.green : TOKENS.red,
-                marginLeft: 6,
-              }}
-            >
-              {t.ch >= 0 ? '▲' : '▼'} {Math.abs(t.ch).toFixed(2)}%
-            </span>
+            <span style={{ color: TOKENS.textMuted, marginRight: 6 }}>{t.label}</span>
+            <span style={{ color: TOKENS.text }}>{t.price}</span>
+            {t.change != null && (
+              <span
+                style={{
+                  color: t.change >= 0 ? TOKENS.green : TOKENS.red,
+                  marginLeft: 6,
+                }}
+              >
+                {t.change >= 0 ? '▲' : '▼'} {Math.abs(t.change).toFixed(2)}%
+              </span>
+            )}
           </span>
         ))}
       </div>
@@ -174,8 +114,30 @@ function TickerStrip() {
   );
 }
 
-function StatusRow({ sessionId }: { sessionId: string }) {
+// ─── status row ─────────────────────────────────────────────────────────
+
+function ageMin(ms: number | undefined | null, now: number): string {
+  if (ms == null) return '—';
+  const min = Math.floor((now - ms) / 60_000);
+  if (min < 1) return '<1 MIN';
+  if (min >= 60) return Math.floor(min / 60) + ' HR';
+  return min + ' MIN';
+}
+
+function StatusRow({
+  snapshot,
+  online,
+}: {
+  snapshot: HomeSnapshot | null;
+  online: 'OK' | 'STALE' | 'FAIL';
+}) {
   const sep = <span style={{ color: TOKENS.textDim, margin: '0 10px' }}>·</span>;
+  const now = Date.now();
+  const dotColor = online === 'OK' ? TOKENS.green : online === 'STALE' ? TOKENS.amber : TOKENS.red;
+  const onlineLabel = online === 'OK' ? 'ONLINE' : online === 'STALE' ? 'STALE' : 'OFFLINE';
+  const ngxvAge = ageMin(snapshot?.cards.ngxv?.lastUpdatedMs, now);
+  const cpvfAge = ageMin(snapshot?.cards.cpvf?.lastUpdatedMs, now);
+  const altflowAge = ageMin(snapshot?.cards.altflow?.lastUpdatedMs, now);
   return (
     <div
       style={{
@@ -189,19 +151,21 @@ function StatusRow({ sessionId }: { sessionId: string }) {
         alignItems: 'center',
       }}
     >
-      <span className="cheddar-pulse-dot" style={{ marginRight: 6 }} />
-      <span style={{ color: TOKENS.green }}>MARKET LIVE</span>
+      <span className="cheddar-pulse-dot" style={{ marginRight: 6, background: dotColor }} />
+      <span style={{ color: dotColor }}>{onlineLabel}</span>
       {sep}
-      <span>{sessionId}</span>
+      <span>NGXV {ngxvAge}</span>
       {sep}
-      <span style={{ color: TOKENS.green }}>3 MODULES ACTIVE</span>
+      <span>CPVF {cpvfAge}</span>
       {sep}
-      <span style={{ color: TOKENS.green }}>NGX OPEN</span>
+      <span>ALTFLOW {altflowAge}</span>
       {sep}
-      <span style={{ color: TOKENS.amber }}>US EQUITIES PRE-OPEN</span>
+      <span>BUILD v0.1.0</span>
     </div>
   );
 }
+
+// ─── hero ───────────────────────────────────────────────────────────────
 
 function Hero() {
   return (
@@ -246,19 +210,95 @@ function Hero() {
   );
 }
 
-function CardView({ card, idx }: { card: Card; idx: number }) {
-  const [hover, setHover] = useState(false);
-  const points = useMemo(() => sparklinePoints(idx + 1), [idx]);
+// ─── dashboard cards ────────────────────────────────────────────────────
 
+interface CardMeta {
+  section: string;
+  code: string;
+  href: string;
+  title: string;
+  blurb: string;
+  sources: string;
+  caption: string;        // small label under the big number
+  accent: string;         // module-signature accent (amber for ALMR/CPVF, green for NGXV)
+}
+
+const CARDS_META: CardMeta[] = [
+  {
+    section: 'LIQUIDITY',
+    code: 'ALMR',
+    href: '/altcoin-monitor',
+    title: 'ALTCOIN LIQUIDITY MONITOR',
+    blurb:
+      'Composite Alt Flow Index across stablecoin supply, BTC/ETH netflows, SSR posture and funding rates.',
+    sources: 'CRYPTOQUANT · COINGLASS',
+    caption: 'ALT FLOW INDEX',
+    accent: TOKENS.amber,
+  },
+  {
+    section: 'CRYPTO',
+    code: 'CPVF',
+    href: '/crypto-valuation',
+    title: 'PROTOCOL VALUATION',
+    blurb:
+      'Revenue multiples, P/F and P/S benchmarks across DeFi sectors. Sector fair-value bands and live multiples.',
+    sources: 'DEFILLAMA · COINGECKO',
+    caption: 'MED P/S',
+    accent: TOKENS.amber,
+  },
+  {
+    section: 'EQUITIES',
+    code: 'NGXV',
+    href: '/ngx-valuation',
+    title: 'NGX VALUATION',
+    blurb:
+      'Nigerian equities · cheap vs peers. P/E, P/B and dividend yield with sector-relative P/B Δ.',
+    sources: 'AFX.KWAYISI · NGX GROUP · COMPANY FILINGS',
+    caption: 'MED P/E',
+    accent: TOKENS.green,
+  },
+];
+
+function fmtFreshness(ms: number | undefined | null, now: number): string {
+  if (ms == null) return 'Awaiting refresh';
+  const min = Math.floor((now - ms) / 60_000);
+  if (min < 1) return 'Updated just now';
+  if (min === 1) return 'Updated 1 min ago';
+  if (min < 60) return `Updated ${min} min ago`;
+  const hr = Math.floor(min / 60);
+  return `Updated ${hr} hr ago`;
+}
+
+function fmtUsdShort(n: number): string {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
+}
+
+function CardView({
+  meta,
+  bigNumber,
+  signalText,
+  signalDotColor,
+  freshness,
+}: {
+  meta: CardMeta;
+  bigNumber: string;
+  signalText: string;
+  signalDotColor: string;
+  freshness: string;
+}) {
+  const [hover, setHover] = useState(false);
   return (
     <Link
-      to={card.href}
+      to={meta.href}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
         display: 'block',
         background: hover ? TOKENS.surfaceHover : TOKENS.surface,
-        border: `1px solid ${hover ? TOKENS.amber : TOKENS.border}`,
+        border: `1px solid ${hover ? meta.accent : TOKENS.border}`,
         padding: 16,
         transition: 'border-color 120ms, background 120ms',
         color: TOKENS.text,
@@ -272,89 +312,130 @@ function CardView({ card, idx }: { card: Card; idx: number }) {
           alignItems: 'baseline',
           fontSize: 10,
           letterSpacing: '0.1em',
-          marginBottom: 10,
+          marginBottom: 14,
         }}
       >
         <span style={{ color: TOKENS.textMuted }}>
-          {card.section} <span style={{ color: TOKENS.textDim }}>·</span>{' '}
-          <span style={{ color: TOKENS.amber }}>{card.code}</span>
-          {card.comingSoon && (
-            <>
-              <span style={{ color: TOKENS.textDim }}> · </span>
-              <span style={{ color: TOKENS.amber }}>COMING SOON</span>
-            </>
-          )}
+          {meta.section} <span style={{ color: TOKENS.textDim }}>·</span>{' '}
+          <span style={{ color: meta.accent }}>{meta.code}</span>
         </span>
-        <span style={{ color: hover ? TOKENS.amber : TOKENS.textDim }}>
+        <span style={{ color: hover ? meta.accent : TOKENS.textDim }}>
           {hover ? 'ENTER →' : '── ──'}
         </span>
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', marginBottom: 8 }}>
-        {card.title}
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', marginBottom: 4 }}>
+        {meta.title}
       </div>
-
-      <p style={{ margin: '0 0 10px', fontSize: 11, color: TOKENS.textMuted, lineHeight: 1.5 }}>
-        {card.blurb}
+      <p style={{ margin: '0 0 16px', fontSize: 11, color: TOKENS.textMuted, lineHeight: 1.5 }}>
+        {meta.blurb}
       </p>
 
-      <div style={{ fontSize: 10, color: TOKENS.textDim, letterSpacing: '0.06em', marginBottom: 14 }}>
-        {card.sources}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginBottom: 12 }}>
-        <div
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: card.headlineColor,
-            fontVariantNumeric: 'tabular-nums',
-            lineHeight: 1,
-          }}
-        >
-          {card.headline}
-        </div>
-        <div style={{ fontSize: 10, color: TOKENS.textMuted, letterSpacing: '0.08em', paddingBottom: 4 }}>
-          {card.headlineLabel}
-        </div>
-      </div>
-
-      <svg
-        viewBox="0 0 100 24"
-        preserveAspectRatio="none"
-        style={{ display: 'block', width: '100%', height: 32, marginBottom: 12 }}
+      <div
+        style={{
+          fontSize: 32,
+          fontWeight: 700,
+          color: TOKENS.text,
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '0.01em',
+          lineHeight: 1,
+          marginBottom: 6,
+        }}
       >
-        <polyline
-          points={points}
-          fill="none"
-          stroke={card.headlineColor}
-          strokeWidth="0.8"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
+        {bigNumber}
+      </div>
+      <div
+        style={{
+          fontSize: 9,
+          color: TOKENS.textMuted,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          marginBottom: 14,
+        }}
+      >
+        {meta.caption}
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 10 }}>
-        {card.metrics.map((m) => (
-          <div
-            key={m.label}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              borderTop: `1px solid ${TOKENS.border}`,
-              paddingTop: 6,
-              letterSpacing: '0.06em',
-            }}
-          >
-            <span style={{ color: TOKENS.textMuted }}>{m.label}</span>
-            <span style={{ color: m.color, fontVariantNumeric: 'tabular-nums' }}>{m.val}</span>
-          </div>
-        ))}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 11,
+          color: TOKENS.text,
+          marginBottom: 10,
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-block',
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: signalDotColor,
+          }}
+        />
+        <span>{signalText}</span>
+      </div>
+
+      <div
+        style={{
+          fontSize: 9,
+          color: TOKENS.textDim,
+          fontStyle: 'italic',
+          letterSpacing: '0.04em',
+          borderTop: `1px solid ${TOKENS.border}`,
+          paddingTop: 8,
+        }}
+      >
+        {freshness}
+      </div>
+
+      <div
+        style={{
+          fontSize: 9,
+          color: TOKENS.textDim,
+          letterSpacing: '0.06em',
+          marginTop: 6,
+        }}
+      >
+        {meta.sources}
       </div>
     </Link>
   );
 }
 
-function DashboardGrid() {
+function DashboardGrid({ snapshot }: { snapshot: HomeSnapshot | null }) {
+  const now = Date.now();
+  const altflow = snapshot?.cards.altflow;
+  const cpvf = snapshot?.cards.cpvf;
+  const ngxv = snapshot?.cards.ngxv;
+
+  const altflowCard = {
+    bigNumber: altflow ? (altflow.indexValue >= 0 ? '+' : '') + altflow.indexValue : '—',
+    signalText: altflow ? `REGIME: ${altflow.band}` : 'Data unavailable',
+    signalDotColor: altflow ? altflow.dotColor : TOKENS.textDim,
+    freshness: fmtFreshness(altflow?.lastUpdatedMs, now),
+  };
+  const cpvfCard = {
+    bigNumber: cpvf ? cpvf.medianPS.toFixed(1) + '×' : '—',
+    signalText: cpvf
+      ? `LEADER: ${cpvf.topLeader.name} · ${fmtUsdShort(cpvf.topLeader.rev24h)} / 24h`
+      : 'Data unavailable',
+    signalDotColor: cpvf ? TOKENS.amber : TOKENS.textDim,
+    freshness: fmtFreshness(cpvf?.lastUpdatedMs, now),
+  };
+  const ngxvCard = {
+    bigNumber: ngxv ? ngxv.medianPE.toFixed(1) + '×' : '—',
+    signalText: ngxv
+      ? `CHEAPEST: ${ngxv.cheapest.ticker} · ${ngxv.cheapest.pbDelta.toFixed(1)}% vs sector`
+      : 'Data unavailable',
+    signalDotColor: ngxv ? TOKENS.green : TOKENS.textDim,
+    freshness: fmtFreshness(ngxv?.lastUpdatedMs, now),
+  };
+
+  const cardData = [altflowCard, cpvfCard, ngxvCard];
+
   return (
     <section style={{ padding: '0 16px 24px' }}>
       <div
@@ -364,15 +445,48 @@ function DashboardGrid() {
           gap: 12,
         }}
       >
-        {CARDS.map((card, idx) => (
-          <CardView key={card.code} card={card} idx={idx} />
+        {CARDS_META.map((meta, i) => (
+          <CardView
+            key={meta.code}
+            meta={meta}
+            bigNumber={cardData[i].bigNumber}
+            signalText={cardData[i].signalText}
+            signalDotColor={cardData[i].signalDotColor}
+            freshness={cardData[i].freshness}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function ActivityLog() {
+// ─── activity log ───────────────────────────────────────────────────────
+
+const MODULE_COLOR: Record<ActivityEvent['module'], string> = {
+  HOME:    TOKENS.amber,
+  ALTFLOW: TOKENS.amber,
+  CPVF:    TOKENS.amber,
+  NGXV:    TOKENS.green,
+  TICKER:  TOKENS.textMuted,
+  SYSTEM:  TOKENS.textMuted,
+};
+
+const STATUS_COLOR: Record<ActivityEvent['status'], string> = {
+  OK:    TOKENS.green,
+  FAIL:  TOKENS.red,
+  STALE: TOKENS.amber,
+};
+
+function fmtClock(ms: number): string {
+  const d = new Date(ms);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function ActivityLog({ events }: { events: ActivityEvent[] }) {
+  const visible = events.slice(0, 12);
   return (
     <section style={{ padding: '0 16px 24px' }}>
       <div
@@ -392,57 +506,153 @@ function ActivityLog() {
             letterSpacing: '0.1em',
           }}
         >
-          <span style={{ color: TOKENS.amber }}>ACTIVITY LOG · LIVE</span>
+          <span style={{ color: TOKENS.amber }}>EVENT LOG · LIVE</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: TOKENS.green }}>
             <span className="cheddar-pulse-dot" />
             STREAMING
           </span>
         </div>
-        <div>
-          {ACTIVITY.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '90px 70px 1fr',
-                gap: 10,
-                fontSize: 11,
-                padding: '6px 12px',
-                borderBottom: i === ACTIVITY.length - 1 ? 'none' : `1px solid ${TOKENS.border}`,
-              }}
-            >
-              <span style={{ color: TOKENS.textMuted, fontVariantNumeric: 'tabular-nums' }}>
-                {row.time}
-              </span>
-              <span style={{ color: TOKENS.amber, letterSpacing: '0.08em' }}>{row.code}</span>
-              <span style={{ color: TOKENS.text }}>{row.msg}</span>
-            </div>
-          ))}
-        </div>
+        {visible.length === 0 ? (
+          <div
+            style={{
+              padding: '14px 12px',
+              fontSize: 10,
+              color: TOKENS.textDim,
+              fontStyle: 'italic',
+            }}
+          >
+            Awaiting activity…
+          </div>
+        ) : (
+          <div>
+            {visible.map((row, i) => (
+              <div
+                key={`${row.ts}-${i}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '90px 80px 110px 1fr 50px',
+                  gap: 10,
+                  fontSize: 10,
+                  lineHeight: 1.4,
+                  padding: '5px 12px',
+                  borderBottom: i === visible.length - 1 ? 'none' : `1px solid ${TOKENS.border}`,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                }}
+              >
+                <span style={{ color: TOKENS.textMuted, fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtClock(row.ts)}
+                </span>
+                <span style={{ color: MODULE_COLOR[row.module], letterSpacing: '0.08em' }}>
+                  {row.module}
+                </span>
+                <span style={{ color: TOKENS.textMuted, letterSpacing: '0.05em' }}>
+                  {row.action}
+                </span>
+                <span
+                  style={{
+                    color: TOKENS.text,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {row.detail}
+                </span>
+                <span style={{ color: STATUS_COLOR[row.status], textAlign: 'right' }}>
+                  {row.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-// ---- Page ----
+// ─── page ───────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const sessionId = useMemo(() => {
-    const n = Math.floor(Math.random() * 1_000_000)
-      .toString()
-      .padStart(6, '0');
-    return `S-${n}`;
+  const [snapshot, setSnapshot] = useState<HomeSnapshot | null>(null);
+  const [snapshotErr, setSnapshotErr] = useState<string | null>(null);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+
+  // Snapshot poll: every 60s. Server-side cache is also 60s, so this is
+  // calibrated — most polls land on warm cache.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSnap = async () => {
+      try {
+        const resp = await fetch('/api/home/snapshot');
+        if (!resp.ok) throw new Error('snapshot HTTP ' + resp.status);
+        const j = (await resp.json()) as HomeSnapshot;
+        if (!cancelled) {
+          setSnapshot(j);
+          setSnapshotErr(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setSnapshotErr(e instanceof Error ? e.message : 'snapshot failed');
+        }
+      }
+    };
+    fetchSnap();
+    const id = setInterval(fetchSnap, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
+
+  // Activity poll: every 10s.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchEvents = async () => {
+      try {
+        const resp = await fetch('/api/activity/recent?limit=20');
+        if (!resp.ok) return;
+        const j = (await resp.json()) as { events: ActivityEvent[] };
+        if (!cancelled) setEvents(j.events || []);
+      } catch {
+        /* swallow — non-critical */
+      }
+    };
+    fetchEvents();
+    const id = setInterval(fetchEvents, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Page-hit ping so the activity log shows navigation events uniformly
+  // in dev (Vite proxy) and prod (single-origin Hono).
+  useEffect(() => {
+    fetch('/api/activity/page-hit?route=/').catch(() => {});
+  }, []);
+
+  const onlineState: 'OK' | 'STALE' | 'FAIL' = useMemo(() => {
+    if (snapshotErr && !snapshot) return 'FAIL';
+    if (!snapshot) return 'STALE';
+    const now = Date.now();
+    const ages = [
+      snapshot.cards.altflow?.lastUpdatedMs,
+      snapshot.cards.cpvf?.lastUpdatedMs,
+      snapshot.cards.ngxv?.lastUpdatedMs,
+    ];
+    const anyStale = ages.some((ms) => ms != null && now - ms > 30 * 60_000);
+    return anyStale ? 'STALE' : 'OK';
+  }, [snapshot, snapshotErr]);
 
   return (
     <div className="cheddar-page">
       <style>{TERMINAL_GLOBAL_CSS}</style>
       <TopBar />
-      <TickerStrip />
-      <StatusRow sessionId={sessionId} />
+      <TickerStrip ticker={snapshot?.ticker ?? null} />
+      <StatusRow snapshot={snapshot} online={onlineState} />
       <Hero />
-      <DashboardGrid />
-      <ActivityLog />
+      <DashboardGrid snapshot={snapshot} />
+      <ActivityLog events={events} />
       <BottomBar />
     </div>
   );

@@ -703,6 +703,7 @@ export default function CryptoValuation() {
 
   useEffect(() => {
     loadData();
+    fetch('/api/activity/page-hit?route=/crypto-valuation').catch(() => {});
     // Run once on mount; manual refresh handled by button
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -109,6 +109,7 @@ export default function AltcoinMonitor() {
       }
     }
     load();
+    fetch('/api/activity/page-hit?route=/altcoin-monitor').catch(() => {});
     const id = setInterval(load, 5 * 60 * 1000);
     return () => {
       cancelled = true;

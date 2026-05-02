@@ -514,6 +514,7 @@ export default function NGXValuation() {
   useEffect(() => {
     loadPrices(false);
     loadFx();
+    fetch('/api/activity/page-hit?route=/ngx-valuation').catch(() => {});
   }, [loadPrices, loadFx]);
 
   const enriched: EnrichedRow[] = useMemo(() => {

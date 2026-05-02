@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { logActivity } from '../lib/activity.ts';
 
 // Free public sources for NGX prices, no API key.
 //
@@ -178,6 +179,12 @@ ngxRoute.get('/prices', async (c) => {
 
   const cacheFresh = ngxCache && Date.now() - ngxCache.fetchedAt < NGX_CACHE_TTL_MS;
   if (!refresh && cacheFresh && ngxCache) {
+    logActivity({
+      module: 'NGXV',
+      action: 'CACHE_HIT',
+      detail: `kwayisi prices · ${wanted.length} tickers`,
+      status: 'OK',
+    });
     return c.json({
       fetchedAt: ngxCache.fetchedAt,
       stale: false,
@@ -191,6 +198,12 @@ ngxRoute.get('/prices', async (c) => {
       throw new Error('no quotes returned from any source');
     }
     ngxCache = { fetchedAt: Date.now(), quotes };
+    logActivity({
+      module: 'NGXV',
+      action: 'CACHE_REFRESH',
+      detail: `scraped ${Object.keys(quotes).length}/${wanted.length} tickers`,
+      status: 'OK',
+    });
     return c.json({
       fetchedAt: ngxCache.fetchedAt,
       stale: false,
@@ -198,6 +211,12 @@ ngxRoute.get('/prices', async (c) => {
     });
   } catch (err) {
     console.error('[ngx-scraper] failed:', err);
+    logActivity({
+      module: 'NGXV',
+      action: 'ERROR',
+      detail: 'scrape failed: ' + (err instanceof Error ? err.message : String(err)),
+      status: 'FAIL',
+    });
     if (ngxCache) {
       return c.json({
         fetchedAt: ngxCache.fetchedAt,
@@ -208,3 +227,13 @@ ngxRoute.get('/prices', async (c) => {
     return c.json({ error: 'scraper failed, no cache', fallback: true }, 503);
   }
 });
+
+// Internal accessor for the home snapshot route — returns the current
+// cached quotes (read-only) without going through the HTTP path.
+export function getCachedNgxQuotes(): {
+  fetchedAt: number;
+  quotes: Record<string, NgxQuote>;
+} | null {
+  if (!ngxCache) return null;
+  return { fetchedAt: ngxCache.fetchedAt, quotes: ngxCache.quotes };
+}
