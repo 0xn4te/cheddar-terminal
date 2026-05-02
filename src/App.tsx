@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import AltcoinMonitor from './pages/AltcoinMonitor';
-import NgxBanks from './pages/NgxBanks';
+import NGXValuation from './pages/NGXValuation';
 import CryptoValuation from './pages/CryptoValuation';
 
 export default function App() {
@@ -10,7 +10,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/altcoin-monitor" element={<AltcoinMonitor />} />
-        <Route path="/ngx-banks" element={<NgxBanks />} />
+        <Route path="/ngx-valuation" element={<NGXValuation />} />
         <Route path="/crypto-valuation" element={<CryptoValuation />} />
         <Route path="*" element={<Home />} />
       </Routes>

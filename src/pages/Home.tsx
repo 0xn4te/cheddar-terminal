@@ -58,21 +58,20 @@ const CARDS: Card[] = [
   },
   {
     section: 'EQUITIES',
-    code: 'NGXB',
-    state: 'stub',
-    href: '/ngx-banks',
-    comingSoon: true,
-    title: 'NGX BANKS VALUATION',
-    blurb: 'P/E, P/B, PEG and dividend yield across NGX banking with peer-discount scoring and live prices.',
-    sources: 'NGX · CARDINALSTONE · COMPANY FILINGS',
-    headline: '8',
+    code: 'NGXV',
+    state: 'live',
+    href: '/ngx-valuation',
+    title: 'NGX VALUATION',
+    blurb: 'Nigerian equities · cheap vs peers. P/E, P/B and dividend yield across NGX listings with sector-relative P/B Δ — the only multiple that matters for financials.',
+    sources: 'AFX.KWAYISI · NGX GROUP · COMPANY FILINGS',
+    headline: '5',
     headlineColor: TOKENS.text,
     headlineLabel: 'NAMES TRACKED',
     metrics: [
       { label: 'ACCESSCORP', val: '2.6×', color: TOKENS.green },
-      { label: 'UBA',        val: '3.9×', color: TOKENS.green },
-      { label: 'ZENITH',     val: '4.1×', color: TOKENS.green },
-      { label: 'GTCO',       val: '4.4×', color: TOKENS.green },
+      { label: 'UBA',        val: '3.1×', color: TOKENS.green },
+      { label: 'ZENITH',     val: '5.1×', color: TOKENS.green },
+      { label: 'GTCO',       val: '5.1×', color: TOKENS.green },
     ],
   },
   {
@@ -98,10 +97,10 @@ const CARDS: Card[] = [
 interface ActivityRow { time: string; code: string; msg: string; }
 const ACTIVITY: ActivityRow[] = [
   { time: '14:31:42', code: 'ALMR', msg: 'USDT supply +$412M / 24h — dry powder forming' },
-  { time: '14:28:15', code: 'NGXB', msg: 'ACCESSCORP P/B drift: 0.42× → 0.43× on volume' },
+  { time: '14:28:15', code: 'NGXV', msg: 'ACCESSCORP P/B drift: 0.42× → 0.43× on volume' },
   { time: '14:24:03', code: 'CPVF', msg: 'DEX sector P/F median compressed to 19.4×' },
   { time: '14:19:28', code: 'ALMR', msg: 'BTC.D crossed 55% → flow regime: NEUTRAL→ROTATING' },
-  { time: '14:11:07', code: 'NGXB', msg: 'GTCO Q1 EPS estimate revised +4.2%' },
+  { time: '14:11:07', code: 'NGXV', msg: 'GTCO Q1 EPS estimate revised +4.2%' },
   { time: '14:02:51', code: 'CPVF', msg: 'Restaking sector added — 4 names, P/F 38.1× med' },
 ];
 

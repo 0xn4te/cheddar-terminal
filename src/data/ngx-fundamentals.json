@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "universe_updated": "2026-04-22",
+  "fx_note": "USD/NGN fetched live from open.er-api.com on dashboard load; never stored here.",
+  "stocks": [
+    {
+      "ticker": "ZENITHBANK",
+      "name": "Zenith Bank",
+      "sector": "Banks",
+      "price": 129.50,
+      "shares_outstanding": 41070000000,
+      "eps_ttm": 25.32,
+      "book_value_per_share": 119,
+      "dividend_per_share_ttm": 10.00,
+      "avd_30d": 4130000000,
+      "last_updated": "2025-12-31",
+      "price_updated": "2026-04-22",
+      "source_url": "https://nairametrics.com/2026/04/07/zenith-bank-fy2025-profit-hits-n1-26-trillion-proposes-n8-75-dividend/",
+      "notes": "FY2025 audited released April 7, 2026. Total div = ₦1.25 interim + ₦8.75 final proposed. BVPS derived from FY2025 PAT (₦1.04T) and ROAE (23.2%); refine when audited balance sheet PDF is parsed. AVD is afx.kwayisi.org 3-month figure used as a 30d proxy."
+    },
+    {
+      "ticker": "GTCO",
+      "name": "GTCO",
+      "sector": "Banks",
+      "price": 130.00,
+      "shares_outstanding": 36550000000,
+      "eps_ttm": 25.43,
+      "book_value_per_share": 93,
+      "dividend_per_share_ttm": 12.76,
+      "avd_30d": 3680000000,
+      "last_updated": "2025-12-31",
+      "price_updated": "2026-04-22",
+      "source_url": "https://nairametrics.com/2026/04/01/gtco-declares-final-dividend-of-n11-76-for-2025-financial-year/",
+      "notes": "FY2025 audited released April 1, 2026. Total div = ₦1.00 interim + ₦11.76 final. BVPS from reported shareholders' funds (₦3.4T) ÷ shares (36.55B). AVD is 3-month proxy."
+    },
+    {
+      "ticker": "ACCESSCORP",
+      "name": "Access Holdings",
+      "sector": "Banks",
+      "price": 31.00,
+      "shares_outstanding": 50360000000,
+      "eps_ttm": 12.01,
+      "book_value_per_share": 79,
+      "dividend_per_share_ttm": 2.05,
+      "avd_30d": 1570000000,
+      "last_updated": "2025-09-30",
+      "price_updated": "2026-04-22",
+      "source_url": "https://theaccesscorporation.com/wp-content/uploads/2025/10/ACCESS-HOLDINGS-PLC-FINANCIAL-STATEMENTS-30-SEPTEMBER-2025.pdf",
+      "notes": "FY2025 audited results approved by board Feb 20, 2026, awaiting CBN clearance — not yet public. Fundamentals from 9M 2025 financials. EPS TTM (12.01) and DPS TTM (2.05 — single FY2024 final paid Apr 30 2025) from stockanalysis.com. Shares (50.36B) per stockanalysis financials, which pulls from the actual filing — afx.kwayisi.org's 54.4B figure was ~8% high, possibly lagged or includes treasury. BVPS = total equity Sept 30 (₦3.98T) ÷ 50.36B = ₦78.96. AVD = afx.kwayisi.org's 3-month avg value (₦1.57B); my prior figure (₦2.45B) wrongly multiplied ADV × current price."
+    },
+    {
+      "ticker": "UBA",
+      "name": "UBA",
+      "sector": "Banks",
+      "price": 53.20,
+      "shares_outstanding": 44200000000,
+      "eps_ttm": 17.11,
+      "book_value_per_share": 68,
+      "dividend_per_share_ttm": 3.25,
+      "avd_30d": 1350000000,
+      "last_updated": "2025-09-30",
+      "price_updated": "2026-04-22",
+      "source_url": "https://africanfinancials.com/document/ng-uba-2025-ir-q3/",
+      "notes": "FY2025 audited results pending CBN clearance. EPS TTM estimated as Q4 2024 (₦3.55) + 9M 2025 (₦13.56) = ₦17.11. DPS TTM = FY2024 final (₦3.00) + H1 2025 interim (₦0.25). BVPS rough estimate from ROAE backing into equity; refine when FY2025 published."
+    },
+    {
+      "ticker": "FBNH",
+      "name": "FBN Holdings",
+      "sector": "Banks",
+      "chart_symbol": "FIRSTHOLDCO",
+      "price": 77.00,
+      "shares_outstanding": 44500000000,
+      "eps_ttm": 0.91,
+      "book_value_per_share": 80,
+      "dividend_per_share_ttm": 0.60,
+      "avd_30d": 1170000000,
+      "last_updated": "2025-12-31",
+      "price_updated": "2026-04-22",
+      "source_url": "https://africanfinancials.com/document/ng-first-2025-ab-00/",
+      "notes": "Rebrand: NGX ticker is now FIRSTHOLDCO (chart_symbol field carries this for chart deeplinks). FY2025 EPS collapsed (₦18.59 → ₦0.91) due to ₦748B impairment charge. Major capital raise (1-for-6 rights + private placement) completed in 2025 — share count and equity both grew materially. BVPS estimated; flag for verification against audited balance sheet."
+    }
+  ]
+}

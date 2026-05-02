@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { dashboardRoute } from './routes/dashboard.ts';
 import { healthRoute } from './routes/health.ts';
 import { historyRoute } from './routes/history.ts';
+import { ngxRoute } from './routes/ngx.ts';
 import { hasApiKey } from './cryptoquant.ts';
 import { hasCoinglassKey } from './coinglass.ts';
 
@@ -16,6 +17,7 @@ app.use('*', logger());
 app.route('/api/health', healthRoute);
 app.route('/api/dashboard', dashboardRoute);
 app.route('/api/history', historyRoute);
+app.route('/api/ngx', ngxRoute);
 
 if (process.env.NODE_ENV === 'production') {
   // Serve static built assets first. serveStatic calls next() on miss so
