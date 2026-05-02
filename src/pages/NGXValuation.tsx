@@ -359,20 +359,6 @@ const NGXV_CSS = `
     color: ${NGXV_TOKENS.textDim};
   }
 
-  .ngxv-headline {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-weight: 400;
-    font-size: clamp(48px, 8vw, 96px);
-    line-height: 0.95;
-    letter-spacing: -0.02em;
-    color: ${NGXV_TOKENS.text};
-    margin: 0;
-  }
-  .ngxv-headline em {
-    font-style: italic;
-    color: ${NGXV_TOKENS.accent};
-  }
-
   .ngxv-eyebrow {
     font-size: 10px;
     color: ${NGXV_TOKENS.accent};
@@ -762,16 +748,13 @@ export default function NGXValuation() {
 
       <main className="ngxv-page">
         <div className="ngxv-eyebrow">── NGX EQUITIES SCREENER</div>
-        <h1 className="ngxv-headline">
-          Lagos <em>Multiples</em>
-        </h1>
         <p
           style={{
             color: NGXV_TOKENS.textMuted,
             fontSize: 13,
             lineHeight: 1.65,
             maxWidth: '60ch',
-            margin: '20px 0 32px',
+            margin: '0 0 32px',
           }}
         >
           Nigerian Exchange listings ranked by P/E, P/B and dividend yield. Bank rows show
