@@ -753,7 +753,6 @@ export default function NGXValuation() {
             color: NGXV_TOKENS.textMuted,
             fontSize: 13,
             lineHeight: 1.65,
-            maxWidth: '60ch',
             margin: '0 0 32px',
           }}
         >
